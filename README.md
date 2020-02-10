@@ -1,3 +1,9 @@
+# Changes
+
+- Provide abort import for AssemblyScript.
+- Provide console.log.
+
+
 <p align="center">
   <a href="https://wasmer.io" target="_blank" rel="noopener">
     <img width="300" src="https://raw.githubusercontent.com/wasmerio/wasmer/master/logo.png" alt="Wasmer logo">

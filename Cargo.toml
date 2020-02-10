@@ -18,6 +18,8 @@ crate-type = ["cdylib"]
 wasmer-runtime = "0.13"
 wasmer-runtime-core = "0.13"
 pyo3 = { version = "0.8", features = ["extension-module"] }
+ucs2 = "^0.3.1"
+
 
 [package.metadata.maturin]
 classifier = [

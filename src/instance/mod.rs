@@ -13,6 +13,7 @@
 
 pub(crate) mod exports;
 pub(crate) mod globals;
+pub(crate) mod assembly;
 pub(crate) mod inspect;
 
 use crate::memory::Memory;
@@ -25,7 +26,8 @@ use pyo3::{
     PyNativeType, PyTryFrom, Python,
 };
 use std::rc::Rc;
-use wasmer_runtime::{imports, instantiate, Export};
+use wasmer_runtime::{imports, instantiate, Export, func, Ctx};
+use assembly::{AsmScriptStringPtr, AsmScriptString};
 
 #[pyclass]
 /// `Instance` is a Python class that represents a WebAssembly instance.
@@ -51,6 +53,19 @@ pub struct Instance {
     pub(crate) globals: Py<ExportedGlobals>,
 }
 
+fn abort(ctx: &mut Ctx, message: AsmScriptStringPtr, filename: AsmScriptStringPtr, line: i32, col: i32) {
+    let memory = ctx.memory(0);
+    let message = message.get_as_string(memory).unwrap();
+    let filename = filename.get_as_string(memory).unwrap();
+    eprintln!("Error: {} at {}:{} col: {}", message, filename, line, col);
+}
+
+fn consolelog(ctx: &mut Ctx, s: AsmScriptStringPtr) {
+    let memory = ctx.memory(0);
+    let message = s.get_as_string(memory).unwrap();
+    eprintln!("{}", message);
+}
+
 #[pymethods]
 /// Implement methods on the `Instance` Python class.
 impl Instance {
@@ -63,7 +78,14 @@ impl Instance {
         let bytes = <PyBytes as PyTryFrom>::try_from(bytes)?.as_bytes();
 
         // Instantiate the WebAssembly module.
-        let imports = imports! {};
+        let imports = imports! {
+            "fixCaptionTrack" => {
+                "console.log" => func!(consolelog),
+            },
+            "env" => {
+                "abort" => func!(abort),
+            },
+        };
         let instance = match instantiate(bytes, &imports) {
             Ok(instance) => Rc::new(instance),
             Err(e) => {
